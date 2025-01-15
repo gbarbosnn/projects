@@ -1,17 +1,23 @@
 {
   "name": "@repo/api",
   "version": "0.0.0",
-  "main": "src/index.ts",
+  "main": "src/http/server.ts",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/http/server.ts"
   },
   "dependencies": {
-    "@repo/auth": "workspace:*"
+    "@fastify/cors": "^10.0.2",
+    "@fastify/swagger": "^9.4.1",
+    "@repo/auth": "workspace:*",
+    "fastify": "^5.2.1",
+    "fastify-type-provider-zod": "^4.0.2",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@types/node": "^22.10.6",
+    "prisma": "^6.2.1",
     "tsx": "^4.19.2"
   },
   "eslintConfig": {

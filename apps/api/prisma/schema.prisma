@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  username String @unique
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tokens             token[]
+  invites            Invite[]
+  organizarions      OrganizationMember[]
+  owns_organizations Organization[]
+  stackholder_on     Stakeholder[]
+  approval_on        Approval[]
+  comments_on        ProposalComment[]
+  metion_on          ProposalComment[]    @relation("MentionedUsers")
+  owns_proposal      Proposal[]
+
+  @@map("users")
+}
+
+enum TokenType {
+  ACCESS
+}
+
+model token {
+  id        String    @id @default(uuid())
+  type      TokenType
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("tokens")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model Invite {
+  id    String @id @default(uuid())
+  name  String
+  email String
+  role  Role
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId String? @map("author_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, email])
+  @@index([email])
+  @@map("invites")
+}
+
+model OrganizationMember {
+  id   String @id @default(uuid())
+  role Role   @default(MEMBER)
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model Organization {
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ownerId String @map("owner_id")
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  invites   Invite[]
+  members   OrganizationMember[]
+  proposals Proposal[]
+
+  @@map("organizations")
+}
+
+model Approval {
+  id        String   @id @default(uuid())
+  status    Status   @default(DRAFT)
+  comments  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  proposalId String   @map("proposal_id")
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+
+  approverId String @map("approver_id")
+  approver   User   @relation(fields: [approverId], references: [id])
+
+  @@map("approvals")
+}
+
+model Stakeholder {
+  id        String   @id @default(uuid())
+  role      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  proposalId String   @map("proposal_id")
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("stakeholders")
+}
+
+enum Status {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  STANDBY
+}
+
+model ProposalHistory {
+  id        String   @id @default(uuid())
+  changes   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  proposalId String   @map("proposal_id")
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+
+  @@map("proposal_histories")
+}
+
+enum NotificationType {
+  STATUS_CHANGED
+  APPROVAL_ADDED
+  COMMENT_ADDED
+  PROPOSAL_SUBMITTED
+  PROPOSAL_REJECTED
+  PROPOSAL_APPROVED
+  REMINDER
+}
+
+model ProposalNotification {
+  id        String           @id @default(uuid())
+  email     String
+  type      NotificationType
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  proposalId String   @map("proposal_id")
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+
+  @@map("proposal_notifications")
+}
+
+model Proposal {
+  id        String @id @default(uuid())
+  name      String
+  objective String
+
+  expect_start_date DateTime @map("start_date")
+  expect_end_date   DateTime @map("end_date")
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  approvals     Approval[]
+  stakeholders  Stakeholder[]
+  histories     ProposalHistory[]
+  notifications ProposalNotification[]
+  comments      ProposalComment[]
+
+  @@map("proposals")
+}
+
+model ProposalComment {
+  id        String   @id @default(uuid())
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  proposalId String   @map("proposal_id")
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  parentId String?          @map("parent_id")
+  parent   ProposalComment? @relation("CommentReplies", fields: [parentId], references: [id])
+
+  mentions    User[]            @relation("MentionedUsers")
+  replying_to ProposalComment[] @relation("CommentReplies")
+
+  @@map("proposal_comments")
+}

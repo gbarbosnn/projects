@@ -3,5 +3,14 @@ Content-Type: application/json
 
 {
   "name": "Gustavo",
-  "email": "gustavo@acme.com"
+  "email": "gbarbosn@gmail.com",
+  "username": "Gustavo Barbosa"
+}
+
+###
+POST http://localhost:3333/users
+Content-Type: application/json
+
+{
+  "email": "gbarbosn@gmail.com",
 }
